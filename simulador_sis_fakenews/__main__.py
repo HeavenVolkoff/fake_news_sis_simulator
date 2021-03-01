@@ -1,4 +1,4 @@
-from simulador_sis_fakenews import simulador
+from simulador_sis_fakenews import simulator
 
 if __name__ == '__main__':
-    simulador()
+    simulator()
