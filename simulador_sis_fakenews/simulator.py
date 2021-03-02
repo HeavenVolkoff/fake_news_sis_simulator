@@ -4,17 +4,12 @@ from __future__ import annotations
 import typing as T
 from enum import IntEnum, auto, unique
 from heapq import heappop, heappush
-from logging import INFO, getLogger
 from operator import add
 from functools import reduce
 from collections import Counter
 
 # External
 from numpy.random import randint, exponential
-
-# Setup logging
-logger = getLogger(name=__name__)
-logger.setLevel(INFO)
 
 
 @unique
@@ -98,10 +93,6 @@ class Simulator:
                 break
 
             print(pos, event.type, event.origin, stats)
-
-            # logger.error(
-            #     "\n".join("%s: %d" for _ in stats), *(a for b in stats.items() for a in b)
-            # )
 
     def gen_events(self, event_queue: T.List[Event]) -> None:
         # External events
