@@ -2,7 +2,7 @@
 from importlib.metadata import version
 
 # Project
-from .simulator import EventType, Simulator
+from .simulator import Topology, EventType, Simulator
 
 try:
     __version__: str = version(__name__)
@@ -14,4 +14,4 @@ except Exception:  # pragma: no cover
     warn(f"Failed to set version due to:\n{traceback.format_exc()}", ImportWarning)
     __version__ = "0.0a0"
 
-__all__ = ("__version__", "Simulator", "EventType")
+__all__ = ("__version__", "EventType", "Topology", "Simulator")

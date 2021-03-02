@@ -162,4 +162,4 @@ class Simulator:
                     )
 
 
-__all__ = ("Simulator", "EventType")
+__all__ = ("Simulator", "Topology", "EventType")
