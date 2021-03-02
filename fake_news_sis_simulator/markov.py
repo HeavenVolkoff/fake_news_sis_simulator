@@ -10,8 +10,8 @@ def q_matrix_k1(
     user_count: int,
     internal_fake_transmission_rate: float,
     external_fake_transmission_rate: float,
-    internal_truth_transmission_rate: float,
-    external_truth_transmission_rate: float,
+    internal_genuine_transmission_rate: float,
+    external_genuine_transmission_rate: float,
 ) -> np.ndarray:
     """
     Generates Q matrix for the k1 problem for any rates and user count
@@ -35,9 +35,9 @@ def q_matrix_k1(
         # Check boundaries
         if i - 1 >= 0:
             # Set endogenous transmission for good news
-            q_matrix[i, i - 1] = (S * I * internal_truth_transmission_rate) / user_count
+            q_matrix[i, i - 1] = (S * I * internal_genuine_transmission_rate) / user_count
             # Add exogenous transmission rates for good news
-            q_matrix[i, i - 1] += I * external_truth_transmission_rate
+            q_matrix[i, i - 1] += I * external_genuine_transmission_rate
             # Update good rate to calc diagonal latter
             g_tax = q_matrix[i, i - 1]
 
