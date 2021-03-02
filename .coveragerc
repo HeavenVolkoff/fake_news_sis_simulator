@@ -1,7 +1,7 @@
 # .coveragerc to control coverage.py
 [run]
 branch = True
-source = simulador_sis_fakenews
+source = fake_news_sis_simulator
 
 [report]
 exclude_lines =
