@@ -1,5 +1,5 @@
 # Internal
-from importlib.metadata import version
+from importlib_metadata import version
 
 # Project
 from .simulator import Topology, EventType, Simulator
