@@ -4,14 +4,17 @@ from __future__ import annotations
 import typing as T
 from enum import IntEnum, auto, unique
 from heapq import heappop, heappush
-from logging import getLogger
+from logging import INFO, getLogger
 from operator import add
 from functools import reduce
+from collections import Counter
 
 # External
 from numpy.random import randint, exponential
 
+# Setup logging
 logger = getLogger(name=__name__)
+logger.setLevel(INFO)
 
 
 @unique
@@ -22,14 +25,14 @@ class Topology(IntEnum):
 
 @unique
 class EventType(IntEnum):
-    fake = auto()
-    truth = auto()
+    Fake = 0
+    Truth = 1
 
 
 @unique
 class EventOrigin(IntEnum):
-    external = auto()
-    internal = auto()
+    External = auto()
+    Internal = auto()
 
 
 class Event(T.NamedTuple):
@@ -43,9 +46,9 @@ class Event(T.NamedTuple):
 class Simulator:
     def __init__(
         self,
-        users: T.Sequence[T.MutableSequence[bool]],
+        users: T.Sequence[T.MutableSequence[EventType]],
         *,
-        rnd: bool,
+        rnd: bool = False,
         topology: Topology = Topology.Clique,
         fake_rate_heuristic: T.Callable[[int], T.Union[int, float]],
         truth_rate_heuristic: T.Callable[[int], T.Union[int, float]],
@@ -53,7 +56,7 @@ class Simulator:
         external_fake_transmission_rate: float,
         internal_truth_transmission_rate: float,
         external_truth_transmission_rate: float,
-    ):
+    ) -> None:
         self.rnd = rnd
         self.clock: float = 0
         self.topology = topology
@@ -65,71 +68,107 @@ class Simulator:
         self.internal_truth_transmission_rate = internal_truth_transmission_rate
         self.external_truth_transmission_rate = external_truth_transmission_rate
 
-    def run(self, duration: float) -> None:
-        end = self.clock + duration
-        while self.clock <= end:
+    def step(
+        self,
+    ) -> T.Generator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None]:
+        while True:
             event_queue: T.List[Event] = []
             self.gen_events(event_queue)
             event = heappop(event_queue)
 
+            # Update clock
+            self.clock += event.delta
+
             timeline = self.users_timeline[event.user_id]
             if self.rnd:
-                timeline[randint(len(timeline))] = event.type == EventType.truth
+                timeline[randint(len(timeline))] = event.type
             else:
-                timeline.append(event.type == EventType.truth)
+                timeline.insert(0, event.type)
                 timeline.pop()
 
-    def gen_events(self, event_queue: T.List[Event]):
+            stats: T.Counter[T.Tuple[EventType, ...]] = Counter()
+            for timeline in self.users_timeline:
+                stats[tuple(timeline)] += 1
+
+            yield self.clock, event, stats
+
+    def debug(self, iterations: int) -> None:
+        for pos, (time, event, stats) in enumerate(self.step()):
+            if pos > iterations:
+                break
+
+            print(pos, event.type, event.origin, stats)
+
+            # logger.error(
+            #     "\n".join("%s: %d" for _ in stats), *(a for b in stats.items() for a in b)
+            # )
+
+    def gen_events(self, event_queue: T.List[Event]) -> None:
         # External events
-        for (timeline_id,) in enumerate(self.users_timeline):
-            heappush(
-                event_queue,
-                Event(
-                    exponential(self.external_fake_transmission_rate),
-                    EventType.fake,
-                    EventOrigin.external,
-                    timeline_id,
-                ),
-            )
-            heappush(
-                event_queue,
-                Event(
-                    exponential(self.external_truth_transmission_rate),
-                    EventType.truth,
-                    EventOrigin.external,
-                    timeline_id,
-                ),
-            )
+        for timeline_id, _ in enumerate(self.users_timeline):
+            if self.external_fake_transmission_rate > 0:
+                heappush(
+                    event_queue,
+                    Event(
+                        exponential(1 / self.external_fake_transmission_rate),
+                        EventType.Fake,
+                        EventOrigin.External,
+                        timeline_id,
+                    ),
+                )
+
+            if self.external_truth_transmission_rate > 0:
+                heappush(
+                    event_queue,
+                    Event(
+                        exponential(1 / self.external_truth_transmission_rate),
+                        EventType.Truth,
+                        EventOrigin.External,
+                        timeline_id,
+                    ),
+                )
 
         # Internal events
-        for current in self.users_timeline:
-            fake_count = reduce(add, current)
+        for current_id, current in enumerate(self.users_timeline):
+            fake_count = int(reduce(add, current))
             truth_count = len(current) - fake_count
             for timeline_id, user in enumerate(self.users_timeline):
-                if user == current:
+                if timeline_id == current_id:
                     continue
 
-                if fake_count > 0:
+                if fake_count > 0 and self.internal_fake_transmission_rate > 0:
                     heappush(
                         event_queue,
                         Event(
-                            exponential(self.fake_rate_heuristic(fake_count)),
-                            EventType.fake,
-                            EventOrigin.internal,
+                            exponential(
+                                1
+                                / (
+                                    self.fake_rate_heuristic(fake_count)
+                                    * self.internal_fake_transmission_rate
+                                )
+                            ),
+                            EventType.Fake,
+                            EventOrigin.Internal,
                             timeline_id,
                         ),
                     )
 
-                if truth_count > 0:
+                if truth_count > 0 and self.internal_truth_transmission_rate > 0:
                     heappush(
                         event_queue,
                         Event(
-                            exponential(self.truth_rate_heuristic(truth_count)),
-                            EventType.truth,
-                            EventOrigin.internal,
+                            exponential(
+                                1
+                                / (
+                                    self.truth_rate_heuristic(truth_count)
+                                    * self.internal_truth_transmission_rate
+                                )
+                            ),
+                            EventType.Truth,
+                            EventOrigin.Internal,
                             timeline_id,
                         ),
                     )
 
 
-__all__ = ("Simulator",)
+__all__ = ("Simulator", "EventType")
