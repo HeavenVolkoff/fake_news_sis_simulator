@@ -3,6 +3,7 @@ from importlib_metadata import version
 
 # Project
 from .simulator import Event, EventType, Simulator, EventOrigin, TimelineType, TopologyType
+from .markov import q_matrix_k1, markov_timeline_probability_matrix, evolution_from_markov
 
 try:
     __version__: str = version(__name__)  # type: ignore
@@ -22,4 +23,7 @@ __all__ = (
     "Simulator",
     "EventOrigin",
     "TimelineType",
+    "q_matrix_k1",
+    "markov_timeline_probability_matrix",
+    "evolution_from_markov",
 )
