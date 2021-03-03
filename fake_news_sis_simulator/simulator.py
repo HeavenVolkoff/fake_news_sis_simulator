@@ -81,7 +81,9 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self.internal_genuine_transmission_rate = internal_genuine_transmission_rate
         self.external_genuine_transmission_rate = external_genuine_transmission_rate
 
-    def __iter__(self) -> T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]:
+    def __iter__(
+        self,
+    ) -> T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]:
         if self._iter is None:
             self._iter = iter(self.step())
         return self._iter
@@ -119,7 +121,9 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
 
     def step(
         self,
-    ) -> T.Generator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None]:
+    ) -> T.Generator[
+        T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None
+    ]:
         """Run a single step of the Simulator."""
         while True:
             event_queue: T.List[Event] = []
@@ -190,7 +194,9 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
                     Event(
                         # Sample an exponential distribution with scale parameter of λ = 1/β to
                         # retrieve the time this event will happen
-                        self.rng.exponential(1 / self.external_genuine_transmission_rate),
+                        self.rng.exponential(
+                            1 / self.external_genuine_transmission_rate
+                        ),
                         EventType.Genuine,
                         EventOrigin.External,
                         timeline_id,
@@ -199,8 +205,8 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
 
         # Internal events
         for current_id, current in enumerate(self.users_timeline):
-            genuine_count = sum(current)
-            fake_count = len(current) - genuine_count
+            fake_count = sum(current)
+            genuine_count = len(current) - fake_count
             for timeline_id, user in enumerate(self.users_timeline):
                 if timeline_id == current_id:
                     continue
@@ -256,4 +262,11 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
                     )
 
 
-__all__ = ("Event", "TopologyType", "EventType", "Simulator", "EventOrigin", "TimelineType")
+__all__ = (
+    "Event",
+    "TopologyType",
+    "EventType",
+    "Simulator",
+    "EventOrigin",
+    "TimelineType",
+)
