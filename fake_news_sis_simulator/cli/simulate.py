@@ -78,19 +78,19 @@ def main(
     timeline_type: TimelineType,
     topology_type: TopologyType,
 ) -> None:
-    timeline_spec = tuple(map(int, timeline_spec.split(",")))
-    timeline_size = len(timeline_spec) - 1
+    _timeline_spec = tuple(map(int, timeline_spec.split(",")))
+    timeline_size = len(_timeline_spec) - 1
     if timeline_size < 1:
         raise ValueError("Timeline have at least 2 values")
 
-    fake_rate = tuple(map(float, fake_rate.split(",")))
-    genuine_rate = tuple(map(float, genuine_rate.split(",")))
-    if len(fake_rate) != 2 or len(genuine_rate) != 2:
+    _fake_rate = tuple(map(float, fake_rate.split(",")))
+    _genuine_rate = tuple(map(float, genuine_rate.split(",")))
+    if len(_fake_rate) != 2 or len(_genuine_rate) != 2:
         raise ValueError("fake_rate and genuine_rate must have two entries")
 
     timeline = []
     template = [EventType.Fake for _ in range(timeline_size)]
-    for pos, spec in enumerate(timeline_spec):
+    for pos, spec in enumerate(_timeline_spec):
         timeline += [template[:] for _ in range(spec)]
         template[timeline_size - (pos + 1)] = EventType.Genuine
 
@@ -100,10 +100,10 @@ def main(
         topology_type=topology_type,
         fake_rate_heuristic=lambda _: 1,
         genuine_rate_heuristic=lambda _: 1,
-        internal_fake_transmission_rate=fake_rate[0],
-        external_fake_transmission_rate=fake_rate[1],
-        internal_genuine_transmission_rate=genuine_rate[0],
-        external_genuine_transmission_rate=genuine_rate[1],
+        internal_fake_transmission_rate=_fake_rate[0],
+        external_fake_transmission_rate=_fake_rate[1],
+        internal_genuine_transmission_rate=_genuine_rate[0],
+        external_genuine_transmission_rate=_genuine_rate[1],
     )
 
     if seed:

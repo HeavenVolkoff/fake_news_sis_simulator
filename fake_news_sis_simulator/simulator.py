@@ -9,6 +9,7 @@ from base64 import b64decode, b64encode
 from collections import Counter
 
 # External
+import numpy as np
 from numpy.random import Generator, default_rng
 
 if T.TYPE_CHECKING:
@@ -20,6 +21,14 @@ if T.TYPE_CHECKING:
 class EventType(IntEnum):
     Fake = 0
     Genuine = 1
+
+    @staticmethod
+    def fake_counter(timeline: T.Sequence[EventType]) -> int:
+        return len(timeline) - sum(timeline)
+
+    @staticmethod
+    def genuine_counter(timeline: T.Sequence[EventType]) -> int:
+        return sum(timeline)
 
 
 @unique
@@ -41,7 +50,6 @@ class TimelineType(IntEnum):
 
 
 class Event(T.NamedTuple):
-    delta: float  # WARNING: Delta must be first element
     type: EventType
     origin: EventOrigin
     user_id: int
@@ -81,9 +89,7 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self.internal_genuine_transmission_rate = internal_genuine_transmission_rate
         self.external_genuine_transmission_rate = external_genuine_transmission_rate
 
-    def __iter__(
-        self,
-    ) -> T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]:
+    def __iter__(self) -> T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]:
         if self._iter is None:
             self._iter = iter(self.step())
         return self._iter
@@ -124,9 +130,12 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
     ) -> T.Generator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None]:
         """Run a single step of the Simulator."""
         while True:
-            event_queue: T.List[Event] = []
+            event_queue: T.List[T.Tuple[float, Event]] = []
             self.gen_events(event_queue)
-            event = heappop(event_queue)
+            if len(event_queue) == 0:
+                break
+
+            delta, event = heappop(event_queue)
 
             timeline = self.users_timeline[event.user_id]
             if self.timeline_type == TimelineType.RND:
@@ -142,7 +151,7 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
                 stats[tuple(timeline)] += 1
 
             # Update clock
-            self.clock += event.delta
+            self.clock += delta
             self.iteration += 1
             yield self.clock, event, stats
 
@@ -161,108 +170,87 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self._seed = seed
         self.rng = rng
 
-    def gen_events(self, event_queue: T.List[Event]) -> None:
+    def gen_events(self, event_queue: T.List[T.Tuple[float, Event]]) -> None:
         """Populate event queue with a round of generated events.
 
         Argument
             event_queue: Event queue to be populated.
 
         """
-        for timeline_id, _ in enumerate(self.users_timeline):
-            # When transmission rate is larger than 0 an event is generated representing an user
-            # receiving a fake news through a external source
-            if self.external_fake_transmission_rate > 0:
-                heappush(
-                    event_queue,
+        for event_type, rate in (
+            (EventType.Fake, self.external_fake_transmission_rate),
+            (EventType.Genuine, self.external_genuine_transmission_rate),
+        ):
+            if rate <= 0:
+                continue
+            external_events = [
+                Event(
+                    event_type,
+                    EventOrigin.External,
+                    timeline_id,
+                )
+                for timeline_id in range(len(self.users_timeline))
+            ]
+            for entry in zip(
+                self.rng.exponential(
+                    # Sample an exponential distribution with scale parameter of λ = 1/β to
+                    # retrieve the time this event will happen
+                    1 / rate,
+                    len(external_events),
+                ),
+                external_events,
+            ):
+                heappush(event_queue, entry)
+
+        for event_type, heuristic, rate, user_counter in (
+            (
+                EventType.Fake,
+                self.fake_rate_heuristic,
+                self.internal_fake_transmission_rate,
+                EventType.fake_counter,
+            ),
+            (
+                EventType.Genuine,
+                self.genuine_rate_heuristic,
+                self.internal_genuine_transmission_rate,
+                EventType.genuine_counter,
+            ),
+        ):
+            if rate <= 0:
+                continue
+
+            internal_events = [
+                (
+                    user_counter(neighbour),
                     Event(
-                        # Sample an exponential distribution with scale parameter of λ = 1/β to
-                        # retrieve the time this event will happen
-                        self.rng.exponential(1 / self.external_fake_transmission_rate),
-                        EventType.Fake,
-                        EventOrigin.External,
-                        timeline_id,
+                        event_type,
+                        EventOrigin.Internal,
+                        neighbour_id,
                     ),
                 )
-
-            # When transmission rate is larger than 0 an event is generated representing an user
-            # receiving a genuine news through a external source
-            if self.external_genuine_transmission_rate > 0:
-                heappush(
-                    event_queue,
-                    Event(
-                        # Sample an exponential distribution with scale parameter of λ = 1/β to
-                        # retrieve the time this event will happen
-                        self.rng.exponential(1 / self.external_genuine_transmission_rate),
-                        EventType.Genuine,
-                        EventOrigin.External,
-                        timeline_id,
+                # Loop through all infected users
+                for current_id, user in enumerate(self.users_timeline)
+                if user_counter(user) > 0
+                # Loop through all neighbor
+                for neighbour_id, neighbour in enumerate(self.users_timeline)
+                if neighbour_id != current_id
+            ]
+            for time, (_, event) in zip(
+                self.rng.exponential(
+                    # Sample an exponential distribution with scale parameter of λ = 1/β to
+                    # retrieve the time this event will happen
+                    1
+                    / (
+                        # β = f₁(k)μ₁
+                        # Represents the rate which a user that has (k) fake news in its
+                        # timeline share on with its neighbours
+                        np.array([heuristic(count) for count, _ in internal_events])
+                        * rate
                     ),
-                )
-
-        # Internal events
-        for current_id, current in enumerate(self.users_timeline):
-            fake_count = sum(current)
-            genuine_count = len(current) - fake_count
-            for timeline_id, user in enumerate(self.users_timeline):
-                if timeline_id == current_id:
-                    continue
-
-                # When transmission rate is larger than 0 and the user has fake news in its timeline
-                # an event is generated representing the user sharing a fake news with one of its
-                # neighbours
-                if fake_count > 0 and self.internal_fake_transmission_rate > 0:
-                    heappush(
-                        event_queue,
-                        Event(
-                            # Sample an exponential distribution with scale parameter of λ = 1/β to
-                            # retrieve the time this event will happen
-                            self.rng.exponential(
-                                1
-                                / (
-                                    # β = f₁(k)μ₁
-                                    # Represents the rate which a user that has (k) fake news in its
-                                    # timeline share on with its neighbours
-                                    self.fake_rate_heuristic(fake_count)
-                                    * self.internal_fake_transmission_rate
-                                )
-                            ),
-                            EventType.Fake,
-                            EventOrigin.Internal,
-                            timeline_id,
-                        ),
-                    )
-
-                # When transmission rate is larger than 0 and the user has genuine news in its
-                # timeline an event is generated representing the user sharing a genuine news with
-                # one of its neighbours
-                if genuine_count > 0 and self.internal_genuine_transmission_rate > 0:
-                    heappush(
-                        event_queue,
-                        Event(
-                            # Sample an exponential distribution with scale parameter of λ = 1/β to
-                            # retrieve the time this event will happen
-                            self.rng.exponential(
-                                1
-                                / (
-                                    # β = f₀(K - k)μ₀
-                                    # Represents the rate which a user that has (K - k) genuine news
-                                    # in its timeline share one with its neighbours
-                                    self.genuine_rate_heuristic(genuine_count)
-                                    * self.internal_genuine_transmission_rate
-                                )
-                            ),
-                            EventType.Genuine,
-                            EventOrigin.Internal,
-                            timeline_id,
-                        ),
-                    )
+                ),
+                internal_events,
+            ):
+                heappush(event_queue, (time, event))
 
 
-__all__ = (
-    "Event",
-    "TopologyType",
-    "EventType",
-    "Simulator",
-    "EventOrigin",
-    "TimelineType",
-)
+__all__ = ("Event", "TopologyType", "EventType", "Simulator", "EventOrigin", "TimelineType")
