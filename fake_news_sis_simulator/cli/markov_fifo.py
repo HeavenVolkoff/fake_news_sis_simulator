@@ -1,14 +1,13 @@
-
+# Internal
 from collections import defaultdict
-from scipy.linalg import expm
+
+# External
 import numpy
-
 from markov_utils import transforma_em_matriz_de_taxas
+from scipy.linalg import expm
 
 
-def gera_estados_fifo(
-        populacao, estado_atual=None, estados=None, debug=False
-):
+def gera_estados_fifo(populacao, estado_atual=None, estados=None, debug=False):
 
     if estado_atual is None:
         estado_atual = (populacao, 0, 0, 0)
@@ -28,95 +27,79 @@ def gera_estados_fifo(
     estados.add(estado_atual)
 
     if debug:
-        print(f'Estado {estado_atual} adicionado.')
+        print(f"Estado {estado_atual} adicionado.")
 
     n00, n01, n10, n11 = estado_atual
 
     proximo_estado1 = (n00 - 1, n01 + 1, n10, n11)
     if proximo_estado1 not in estados:
         # print(f'Proximo estado 1: {proximo_estado1}')
-        novos_estados = gera_estados_fifo(
-            populacao,
-            estado_atual=proximo_estado1,
-            estados=estados
-        )
+        novos_estados = gera_estados_fifo(populacao, estado_atual=proximo_estado1, estados=estados)
         estados.update(novos_estados)
     else:
         if debug:
-            print(f'{estado_atual} deixou de visitar {proximo_estado1}')
+            print(f"{estado_atual} deixou de visitar {proximo_estado1}")
 
     proximo_estado2 = (n00 + 1, n01, n10 - 1, n11)
     if proximo_estado2 not in estados:
         # print(f'Proximo estado 2: {proximo_estado2}')
-        novos_estados = gera_estados_fifo(
-            populacao,
-            estado_atual=proximo_estado2,
-            estados=estados
-        )
+        novos_estados = gera_estados_fifo(populacao, estado_atual=proximo_estado2, estados=estados)
         estados.update(novos_estados)
     else:
         if debug:
-            print(f'{estado_atual} deixou de visitar {proximo_estado2}')
+            print(f"{estado_atual} deixou de visitar {proximo_estado2}")
 
     proximo_estado3 = (n00, n01 - 1, n10 + 1, n11)
     if proximo_estado3 not in estados:
         # print(f'Proximo estado 3: {proximo_estado3}')
-        novos_estados = gera_estados_fifo(
-            populacao,
-            estado_atual=proximo_estado3,
-            estados=estados
-        )
+        novos_estados = gera_estados_fifo(populacao, estado_atual=proximo_estado3, estados=estados)
         estados.update(novos_estados)
     else:
         if debug:
-            print(f'{estado_atual} deixou de visitar {proximo_estado3}')
+            print(f"{estado_atual} deixou de visitar {proximo_estado3}")
 
     proximo_estado4 = (n00, n01 - 1, n10, n11 + 1)
     if proximo_estado4 not in estados:
         # print(f'Proximo estado 4: {proximo_estado4}')
-        novos_estados = gera_estados_fifo(
-            populacao,
-            estado_atual=proximo_estado4,
-            estados=estados
-        )
+        novos_estados = gera_estados_fifo(populacao, estado_atual=proximo_estado4, estados=estados)
         estados.update(novos_estados)
     else:
         if debug:
-            print(f'{estado_atual} deixou de visitar {proximo_estado4}')
+            print(f"{estado_atual} deixou de visitar {proximo_estado4}")
 
     proximo_estado5 = (n00, n01, n10 + 1, n11 - 1)
     if proximo_estado5 not in estados:
         # print(f'Proximo estado 4: {proximo_estado4}')
-        novos_estados = gera_estados_fifo(
-            populacao,
-            estado_atual=proximo_estado5,
-            estados=estados
-        )
+        novos_estados = gera_estados_fifo(populacao, estado_atual=proximo_estado5, estados=estados)
         estados.update(novos_estados)
     else:
         if debug:
-            print(f'{estado_atual} deixou de visitar {proximo_estado5}')
+            print(f"{estado_atual} deixou de visitar {proximo_estado5}")
 
     proximo_estado6 = (n00, n01 + 1, n10 - 1, n11)
     if proximo_estado6 not in estados:
         # print(f'Proximo estado 4: {proximo_estado4}')
-        novos_estados = gera_estados_fifo(
-            populacao,
-            estado_atual=proximo_estado6,
-            estados=estados
-        )
+        novos_estados = gera_estados_fifo(populacao, estado_atual=proximo_estado6, estados=estados)
         estados.update(novos_estados)
     else:
         if debug:
-            print(f'{estado_atual} deixou de visitar {proximo_estado6}')
+            print(f"{estado_atual} deixou de visitar {proximo_estado6}")
 
     return estados
 
 
-
 def preenche_matriz_fifo(
-        populacao, lambda0, lambda1, mu0, mu1,  *,
-        estado_anterior=None, estado_atual=None, taxa=None, estados=None, debug=False
+    populacao,
+    lambda0,
+    lambda1,
+    mu0,
+    mu1,
+    *,
+    estado_anterior=None,
+    estado_atual=None,
+    taxa=None,
+    estados=None,
+    debug=False,
 ):
 
     if estado_anterior is None:
@@ -133,12 +116,12 @@ def preenche_matriz_fifo(
 
     if sum(estado_atual) not in range(populacao + 1):
         if debug:
-            print(f'Soma do estado não está no range({populacao}: {estado_atual}')
+            print(f"Soma do estado não está no range({populacao}: {estado_atual}")
         return dict()
 
     if any(s < 0 for s in estado_atual):
         if debug:
-            print(f'Não pode números negativos: {estado_atual}')
+            print(f"Não pode números negativos: {estado_atual}")
         return dict()
 
     # Se a posição na matriz já estiver preenchida, não preencho de novo.
@@ -148,14 +131,14 @@ def preenche_matriz_fifo(
     estados[estado_anterior][estado_atual] = taxa
 
     if debug:
-        print(f'Estado {estado_atual} adicionado.')
+        print(f"Estado {estado_atual} adicionado.")
 
     n00, n01, n10, n11 = estado_atual
 
     proximo_estado1 = (n00 - 1, n01 + 1, n10, n11)
     # if proximo_estado1 not in estados:
-        # print(f'Proximo estado 1: {proximo_estado1}')
-    taxa = lambda1 + n00 * mu1 * (n01 + n10 + 2*n11)
+    # print(f'Proximo estado 1: {proximo_estado1}')
+    taxa = lambda1 + n00 * mu1 * (n01 + n10 + 2 * n11)
     novos_estados = preenche_matriz_fifo(
         populacao,
         mu0=mu0,
@@ -165,13 +148,13 @@ def preenche_matriz_fifo(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado1,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
     proximo_estado2 = (n00 + 1, n01, n10 - 1, n11)
     # if proximo_estado2 not in estados:
-        # print(f'Proximo estado 2: {proximo_estado2}')
+    # print(f'Proximo estado 2: {proximo_estado2}')
     taxa = lambda0 + n10 * mu0 * (2 * n00 + n01 + (n10 - 1))
     novos_estados = preenche_matriz_fifo(
         populacao,
@@ -182,14 +165,14 @@ def preenche_matriz_fifo(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado2,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
     proximo_estado3 = (n00, n01 - 1, n10 + 1, n11)
     # if proximo_estado3 not in estados:
-        # print(f'Proximo estado 3: {proximo_estado3}')
-    taxa = lambda0 + n01 * mu0 * (2*n00 + (n01 - 1) + n10)
+    # print(f'Proximo estado 3: {proximo_estado3}')
+    taxa = lambda0 + n01 * mu0 * (2 * n00 + (n01 - 1) + n10)
     novos_estados = preenche_matriz_fifo(
         populacao,
         mu0=mu0,
@@ -199,14 +182,14 @@ def preenche_matriz_fifo(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado3,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
     proximo_estado4 = (n00, n01 - 1, n10, n11 + 1)
     # if proximo_estado4 not in estados:
-        # print(f'Proximo estado 4: {proximo_estado4}')
-    taxa = lambda1 + n01 * mu1 * ((n01 - 1) + n10 + 2*n11)
+    # print(f'Proximo estado 4: {proximo_estado4}')
+    taxa = lambda1 + n01 * mu1 * ((n01 - 1) + n10 + 2 * n11)
     novos_estados = preenche_matriz_fifo(
         populacao,
         mu0=mu0,
@@ -216,7 +199,7 @@ def preenche_matriz_fifo(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado4,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
@@ -233,7 +216,7 @@ def preenche_matriz_fifo(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado5,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
@@ -250,7 +233,7 @@ def preenche_matriz_fifo(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado6,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
@@ -258,18 +241,19 @@ def preenche_matriz_fifo(
 
 
 def markov_fifo(
-        populacao,
-        estado_inicial,
-        estado_final,
-        mu0,
-        mu1,
-        lambda0,
-        lambda1,
-        *,
-        max_time,
-        time_inc,
-        debug=False
+    populacao,
+    estado_inicial,
+    estado_final,
+    mu0,
+    mu1,
+    lambda0,
+    lambda1,
+    *,
+    max_time,
+    time_inc,
+    debug=False,
 ):
+    # External
     from matplotlib import pyplot as plt
 
     estados = gera_estados_fifo(populacao=populacao)
@@ -278,7 +262,7 @@ def markov_fifo(
     mapeamento = {estado: i for i, estado in enumerate(estados)}
     mapeamento_reverso = {i: estado for i, estado in enumerate(estados)}
     if debug:
-        print('Mapeamento:', mapeamento)
+        print("Mapeamento:", mapeamento)
 
     estados_preenchidos = preenche_matriz_fifo(
         populacao=populacao,
@@ -288,20 +272,14 @@ def markov_fifo(
         lambda1=lambda1,
     )
     if debug:
-        print('Estados preenchidos:', estados_preenchidos)
+        print("Estados preenchidos:", estados_preenchidos)
 
-    Q = transforma_em_matriz_de_taxas(
-        mapeamento,
-        estados_preenchidos
-    )
+    Q = transforma_em_matriz_de_taxas(mapeamento, estados_preenchidos)
 
     inistate = mapeamento[estado_inicial]
 
     timeline_probability_matrix = numpy.zeros(
-        [
-            len(numpy.arange(0, max_time, time_inc)),
-            Q.shape[0]
-        ]
+        [len(numpy.arange(0, max_time, time_inc)), Q.shape[0]]
     )
 
     for tt, t in enumerate(numpy.arange(0, max_time, time_inc)):
@@ -312,13 +290,13 @@ def markov_fifo(
     plt.plot(
         numpy.arange(0, max_time, time_inc),
         timeline_probability_matrix[:, mapeamento[estado_inicial]],
-        label=estado_inicial
+        label=estado_inicial,
     )
     plt.plot(
         numpy.arange(0, max_time, time_inc),
         timeline_probability_matrix[:, mapeamento[estado_final]],
-        color='orange',
-        label=estado_final
+        color="orange",
+        label=estado_final,
     )
 
     plt.legend()
@@ -326,7 +304,7 @@ def markov_fifo(
     return timeline_probability_matrix
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     timeline_probability_matrix = markov_fifo(
         populacao=5,
@@ -337,8 +315,10 @@ if __name__ == '__main__':
         lambda0=0.1,
         lambda1=0.2,
         max_time=10,
-        time_inc=0.01
+        time_inc=0.01,
     )
 
+    # External
     from matplotlib import pyplot as plt
+
     plt.show()

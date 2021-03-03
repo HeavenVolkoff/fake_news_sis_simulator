@@ -1,9 +1,10 @@
-
+# Internal
 from collections import defaultdict
-from scipy.linalg import expm
-import numpy
 
+# External
+import numpy
 from markov_utils import transforma_em_matriz_de_taxas
+from scipy.linalg import expm
 
 # while tempo_passado < tempo_total:
 #     # TE = Tempo do estado N
@@ -41,9 +42,8 @@ from markov_utils import transforma_em_matriz_de_taxas
 #
 # plt.plot(eixo_x, eixo_y)
 
-def gera_estados_rnd(
-        populacao, estado_atual=None, estados=None
-):
+
+def gera_estados_rnd(populacao, estado_atual=None, estados=None):
 
     if estado_atual is None:
         estado_atual = (populacao, 0, 0)
@@ -69,23 +69,15 @@ def gera_estados_rnd(
     proximo_estado1 = (n0 + 1, n1 - 1, n2)
     if proximo_estado1 not in estados:
         # print(f'Proximo estado 1: {proximo_estado1}')
-        novos_estados = gera_estados_rnd(
-            populacao,
-            estado_atual=proximo_estado1,
-            estados=estados
-        )
+        novos_estados = gera_estados_rnd(populacao, estado_atual=proximo_estado1, estados=estados)
         estados.update(novos_estados)
     else:
-        pass # print(f'{estado_atual} deixou de visitar {proximo_estado1}')
+        pass  # print(f'{estado_atual} deixou de visitar {proximo_estado1}')
 
     proximo_estado2 = (n0 - 1, n1 + 1, n2)
     if proximo_estado2 not in estados:
         # print(f'Proximo estado 2: {proximo_estado2}')
-        novos_estados = gera_estados_rnd(
-            populacao,
-            estado_atual=proximo_estado2,
-            estados=estados
-        )
+        novos_estados = gera_estados_rnd(populacao, estado_atual=proximo_estado2, estados=estados)
         estados.update(novos_estados)
     else:
         pass  #  print(f'{estado_atual} deixou de visitar {proximo_estado2}')
@@ -93,34 +85,33 @@ def gera_estados_rnd(
     proximo_estado3 = (n0, n1 + 1, n2 - 1)
     if proximo_estado3 not in estados:
         # print(f'Proximo estado 3: {proximo_estado3}')
-        novos_estados = gera_estados_rnd(
-            populacao,
-            estado_atual=proximo_estado3,
-            estados=estados
-        )
+        novos_estados = gera_estados_rnd(populacao, estado_atual=proximo_estado3, estados=estados)
         estados.update(novos_estados)
     else:
-        pass # print(f'{estado_atual} deixou de visitar {proximo_estado3}')
+        pass  # print(f'{estado_atual} deixou de visitar {proximo_estado3}')
 
     proximo_estado4 = (n0, n1 - 1, n2 + 1)
     if proximo_estado4 not in estados:
         # print(f'Proximo estado 4: {proximo_estado4}')
-        novos_estados = gera_estados_rnd(
-            populacao,
-            estado_atual=proximo_estado4,
-            estados=estados
-        )
+        novos_estados = gera_estados_rnd(populacao, estado_atual=proximo_estado4, estados=estados)
         estados.update(novos_estados)
     else:
-        pass # print(f'{estado_atual} deixou de visitar {proximo_estado4}')
+        pass  # print(f'{estado_atual} deixou de visitar {proximo_estado4}')
 
     return estados
 
 
-
 def preenche_matriz_rnd(
-        populacao, lambda0, lambda1, mu0, mu1,  *,
-        estado_anterior=None, estado_atual=None, taxa=None, estados=None
+    populacao,
+    lambda0,
+    lambda1,
+    mu0,
+    mu1,
+    *,
+    estado_anterior=None,
+    estado_atual=None,
+    taxa=None,
+    estados=None,
 ):
 
     if estado_anterior is None:
@@ -149,14 +140,13 @@ def preenche_matriz_rnd(
         return dict()
     estados[estado_anterior][estado_atual] = taxa
 
-
     # print(f'Estado {estado_atual} adicionado.')
 
     n0, n1, n2 = estado_atual
 
     proximo_estado1 = (n0 + 1, n1 - 1, n2)
     # if proximo_estado1 not in estados:
-        # print(f'Proximo estado 1: {proximo_estado1}')
+    # print(f'Proximo estado 1: {proximo_estado1}')
     taxa = 0.5 * mu0 * (2 * n0 + n1)
     novos_estados = preenche_matriz_rnd(
         populacao,
@@ -167,14 +157,14 @@ def preenche_matriz_rnd(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado1,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
-    proximo_estado2 = (n0 - 1, n1 + 1, n2)     # 1, 1, 0 --> 0, 2, 0
+    proximo_estado2 = (n0 - 1, n1 + 1, n2)  # 1, 1, 0 --> 0, 2, 0
     # if proximo_estado2 not in estados:
-        # print(f'Proximo estado 2: {proximo_estado2}')
-    taxa = n2 * mu0 * (2*n0 + n1)
+    # print(f'Proximo estado 2: {proximo_estado2}')
+    taxa = n2 * mu0 * (2 * n0 + n1)
     novos_estados = preenche_matriz_rnd(
         populacao,
         mu0=mu0,
@@ -184,13 +174,13 @@ def preenche_matriz_rnd(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado2,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
     proximo_estado3 = (n0, n1 + 1, n2 - 1)
     # if proximo_estado3 not in estados:
-        # print(f'Proximo estado 3: {proximo_estado3}')
+    # print(f'Proximo estado 3: {proximo_estado3}')
     taxa = n0 * mu1 * (n1 + 2 * n2)
     novos_estados = preenche_matriz_rnd(
         populacao,
@@ -201,13 +191,13 @@ def preenche_matriz_rnd(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado3,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
     proximo_estado4 = (n0, n1 - 1, n2 + 1)
     # if proximo_estado4 not in estados:
-        # print(f'Proximo estado 4: {proximo_estado4}')
+    # print(f'Proximo estado 4: {proximo_estado4}')
     taxa = 0.5 * n1 * mu1 * (n1 + 2 * n2)
     novos_estados = preenche_matriz_rnd(
         populacao,
@@ -218,37 +208,39 @@ def preenche_matriz_rnd(
         estado_anterior=estado_atual,
         estado_atual=proximo_estado4,
         taxa=taxa,
-        estados=estados
+        estados=estados,
     )
     estados.update(novos_estados)
 
     return estados
 
 
-
 def markov_rnd(
-        populacao,
-        estado_inicial,
-        estado_final,
-        mu0,
-        mu1,
-        lambda0,
-        lambda1,
-        *,
-        max_time,
-        time_inc,
-        debug=False
+    populacao,
+    estado_inicial,
+    estado_final,
+    mu0,
+    mu1,
+    lambda0,
+    lambda1,
+    *,
+    max_time,
+    time_inc,
+    debug=False,
 ):
+    # External
     from matplotlib import pyplot as plt
 
-    estados = gera_estados_rnd(populacao, )
+    estados = gera_estados_rnd(
+        populacao,
+    )
     if debug:
-        print('Estados gerados:', estados)
+        print("Estados gerados:", estados)
 
     mapeamento = {estado: i for i, estado in enumerate(estados)}
     mapeamento_reverso = {i: estado for i, estado in enumerate(estados)}
     if debug:
-        print('Mapeamento:', mapeamento)
+        print("Mapeamento:", mapeamento)
 
     estados_preenchidos = preenche_matriz_rnd(
         populacao,
@@ -272,14 +264,10 @@ def markov_rnd(
     #     print('[', ', '.join(f'{s:2.3f}' for s in matriz_com_diagonal[l, :]), ']')
     # print(']')
 
-
     inistate = mapeamento[estado_inicial]
 
     timeline_probability_matrix = numpy.zeros(
-        [
-            len(numpy.arange(0, max_time, time_inc)),
-            Q.shape[0]
-        ]
+        [len(numpy.arange(0, max_time, time_inc)), Q.shape[0]]
     )
 
     for step, t in enumerate(numpy.arange(0, max_time, time_inc)):
@@ -289,13 +277,13 @@ def markov_rnd(
     plt.plot(
         numpy.arange(0, max_time, time_inc),
         timeline_probability_matrix[:, mapeamento[estado_inicial]],
-        label=estado_inicial
+        label=estado_inicial,
     )
     plt.plot(
         numpy.arange(0, max_time, time_inc),
         timeline_probability_matrix[:, mapeamento[estado_final]],
-        color='orange',
-        label=estado_final
+        color="orange",
+        label=estado_final,
     )
 
     plt.legend()
@@ -303,7 +291,7 @@ def markov_rnd(
     return timeline_probability_matrix
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     timeline_probability_matrix = markov_rnd(
         populacao=5,
@@ -314,8 +302,10 @@ if __name__ == '__main__':
         lambda0=0,
         lambda1=0,
         max_time=10,
-        time_inc=0.01
+        time_inc=0.01,
     )
 
+    # External
     from matplotlib import pyplot as plt
+
     plt.show()

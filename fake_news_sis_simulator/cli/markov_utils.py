@@ -1,4 +1,6 @@
+# External
 import numpy
+
 
 def transforma_em_matriz(mapeamento, preenchidos):
     matriz = numpy.zeros((len(mapeamento), len(mapeamento)))
