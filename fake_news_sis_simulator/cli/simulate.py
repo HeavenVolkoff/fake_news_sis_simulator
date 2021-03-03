@@ -2,7 +2,6 @@ from __future__ import annotations
 
 # Internal
 import typing as T
-from copy import deepcopy
 from contextlib import suppress
 
 # External
@@ -90,9 +89,9 @@ def main(
         raise ValueError("fake_rate and genuine_rate must have two entries")
 
     timeline = []
-    template = [deepcopy(EventType.Fake) for _ in range(timeline_size)]
+    template = [EventType.Fake for _ in range(timeline_size)]
     for pos, spec in enumerate(timeline_spec):
-        timeline += [deepcopy(template) for _ in range(spec)]
+        timeline += [template[:] for _ in range(spec)]
         template[timeline_size - (pos + 1)] = EventType.Genuine
 
     simulator = Simulator(

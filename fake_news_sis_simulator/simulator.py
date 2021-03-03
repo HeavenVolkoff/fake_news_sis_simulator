@@ -6,8 +6,6 @@ import typing as T
 from enum import IntEnum, auto, unique
 from heapq import heappop, heappush
 from base64 import b64decode, b64encode
-from operator import add
-from functools import reduce
 from collections import Counter
 
 # External
@@ -201,8 +199,8 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
 
         # Internal events
         for current_id, current in enumerate(self.users_timeline):
-            fake_count = int(reduce(add, current))
-            genuine_count = len(current) - fake_count
+            genuine_count = sum(current)
+            fake_count = len(current) - genuine_count
             for timeline_id, user in enumerate(self.users_timeline):
                 if timeline_id == current_id:
                     continue
