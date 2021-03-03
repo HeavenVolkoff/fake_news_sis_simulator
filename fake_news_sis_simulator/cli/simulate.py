@@ -173,13 +173,14 @@ def main(
 
                 infos_table.add_row(str(time), event.type.name, event.origin.name)
 
+                keys = tuple(sorted(key for key in stats.keys()))
                 stats_columns = tuple(
-                    "".join(key.name[0] for key in keys) for keys in stats.keys()
+                    "".join(key.name[0] for key in state_keys) for state_keys in keys
                 )
                 if len(stats_columns) != len(stats_table.columns):
                     setup_stats_table(*stats_columns)
 
-                stats_table.add_row(*(Pretty(value) for value in stats.values()))
+                stats_table.add_row(*(Pretty(stats[key]) for key in keys))
 
                 if isinstance(progress, Progress) and progress_task is not None:
                     progress.update(progress_task, advance=1)

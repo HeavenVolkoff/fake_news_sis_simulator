@@ -121,9 +121,7 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
 
     def step(
         self,
-    ) -> T.Generator[
-        T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None
-    ]:
+    ) -> T.Generator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None]:
         """Run a single step of the Simulator."""
         while True:
             event_queue: T.List[Event] = []
@@ -194,9 +192,7 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
                     Event(
                         # Sample an exponential distribution with scale parameter of λ = 1/β to
                         # retrieve the time this event will happen
-                        self.rng.exponential(
-                            1 / self.external_genuine_transmission_rate
-                        ),
+                        self.rng.exponential(1 / self.external_genuine_transmission_rate),
                         EventType.Genuine,
                         EventOrigin.External,
                         timeline_id,
