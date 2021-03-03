@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 # Internal
-import pickle
 import typing as T
 from copy import deepcopy
-from base64 import b64decode, b64encode
 from contextlib import suppress
 
 # External
@@ -55,7 +53,8 @@ class ReversedTable(Table):
                 add_cell(column, renderable)
             else:
                 raise NotRenderableError(
-                    f"unable to render {type(renderable).__name__}; a string or other renderable object is required"
+                    f"unable to render {type(renderable).__name__};"
+                    "a string or other renderable object is required"
                 )
         self.rows.insert(0, Row(style=style, end_section=end_section))
 
@@ -73,7 +72,7 @@ class ReversedTable(Table):
 def main(
     timeline_spec: T.List[int],
     *,
-    seed: T.Union[str, bytes],
+    seed: str,
     fake_rate: T.Tuple[float, float],
     iterations: int,
     genuine_rate: T.Tuple[float, float],
@@ -92,7 +91,6 @@ def main(
 
     simulator = Simulator(
         timeline,
-        rng=seed if seed is None else pickle.loads(b64decode(seed)),
         timeline_type=timeline_type,
         topology_type=topology_type,
         fake_rate_heuristic=lambda _: 1,
@@ -102,6 +100,9 @@ def main(
         internal_genuine_transmission_rate=genuine_rate[0],
         external_genuine_transmission_rate=genuine_rate[1],
     )
+
+    if seed:
+        simulator.load_seed(seed)
 
     # === GUI Setup === #
     layout = Layout(name="root")
@@ -160,20 +161,17 @@ def main(
     with Live(
         layout, refresh_per_second=10, screen=True, redirect_stdout=False, redirect_stderr=False
     ):
-        seed = b64encode(pickle.dumps(simulator.rng))
         with suppress(KeyboardInterrupt):
-            for idx, (time, event, stats) in enumerate(simulator):
-                if 0 < iterations < idx:
+            for time, event, stats in simulator:
+                if 0 < iterations <= simulator.iteration:
                     break
 
-                if len(infos_table.rows) > 40:
-                    setup_info_table()
                 infos_table.add_row(str(time), event.type.name, event.origin.name)
 
                 stats_columns = tuple(
                     "".join(key.name[0] for key in keys) for keys in stats.keys()
                 )
-                if len(stats_columns) != len(stats_table.columns) or len(stats_table.rows) > 40:
+                if len(stats_columns) != len(stats_table.columns):
                     setup_stats_table(*stats_columns)
 
                 stats_table.add_row(*(Pretty(value) for value in stats.values()))
@@ -181,10 +179,10 @@ def main(
                 if isinstance(progress, Progress) and progress_task is not None:
                     progress.update(progress_task, advance=1)
 
-            layout["footer"].update("Press any key to exit...")
+            layout["footer"].update("Press enter key to exit...")
             input()
 
-    print("Seed:", seed.decode(encoding="utf8"))
+    print("Seed:", simulator.seed)
 
 
 if __name__ == "__main__":

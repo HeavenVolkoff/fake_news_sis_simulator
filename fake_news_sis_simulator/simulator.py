@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 # Internal
+import pickle
 import typing as T
 from enum import IntEnum, auto, unique
 from heapq import heappop, heappush
+from base64 import b64decode, b64encode
 from operator import add
 from functools import reduce
 from collections import Counter
@@ -54,7 +56,6 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self,
         users: T.Sequence[T.MutableSequence[EventType]],
         *,
-        rng: T.Optional[Generator] = None,
         timeline_type: TimelineType = TimelineType.FIFO,
         topology_type: TopologyType = TopologyType.Clique,
         fake_rate_heuristic: T.Callable[[int], T.Union[int, float]],
@@ -64,9 +65,15 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         internal_genuine_transmission_rate: float,
         external_genuine_transmission_rate: float,
     ) -> None:
-        self.rng = default_rng(None) if rng is None else rng
+        self._iter: T.Optional[
+            T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]
+        ] = None
+        self._seed: T.Optional[str] = None
+
+        self.rng = default_rng(None)
         self.clock: float = 0
         self.topology = topology_type
+        self.iteration = 0
         self.timeline_type = timeline_type
         self.users_timeline = users
         self.fake_rate_heuristic = fake_rate_heuristic
@@ -77,7 +84,9 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self.external_genuine_transmission_rate = external_genuine_transmission_rate
 
     def __iter__(self) -> T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]:
-        return iter(self.step())
+        if self._iter is None:
+            self._iter = iter(self.step())
+        return self._iter
 
     def __rich__(self) -> "Pretty":
         # External
@@ -85,8 +94,9 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
 
         return Pretty(
             {
-                "clock": self.clock,
                 "users": len(self.users_timeline),
+                "clock": self.clock,
+                "iteration": self.iteration,
                 "timeline": self.timeline_type.name,
                 "topology": self.topology.name,
                 "rate": {
@@ -102,6 +112,13 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
             }
         )
 
+    @property
+    def seed(self) -> str:
+        """Generate seed from current random generator"""
+        if self._seed is None:
+            self._seed = b64encode(pickle.dumps(self.rng)).decode(encoding="utf8")
+        return self._seed
+
     def step(
         self,
     ) -> T.Generator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]], None, None]:
@@ -110,9 +127,6 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
             event_queue: T.List[Event] = []
             self.gen_events(event_queue)
             event = heappop(event_queue)
-
-            # Update clock
-            self.clock += event.delta
 
             timeline = self.users_timeline[event.user_id]
             if self.timeline_type == TimelineType.RND:
@@ -127,7 +141,25 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
             for timeline in self.users_timeline:
                 stats[tuple(timeline)] += 1
 
+            # Update clock
+            self.clock += event.delta
+            self.iteration += 1
             yield self.clock, event, stats
+
+    def load_seed(self, seed: str) -> None:
+        """Load a seed to reenact a previous simulator run.
+
+        Arguments:
+            seed: Base64 encode of a pickled numpy.random.Generator instance
+
+        """
+        rng = pickle.loads(b64decode(seed))
+
+        if not isinstance(rng, Generator):
+            raise ValueError("Seed must be a pickle of a numpy.random.Generator")
+
+        self._seed = seed
+        self.rng = rng
 
     def gen_events(self, event_queue: T.List[Event]) -> None:
         """Populate event queue with a round of generated events.

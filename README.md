@@ -1,6 +1,8 @@
 # Fake News SIS Simulator
 
-Simulator of the SIS epidemic model to analise fake news propagation
+Simulator for the SIS epidemic model to analise fake news propagation
+
+![](simulator.gif)
 
 ## License
 
