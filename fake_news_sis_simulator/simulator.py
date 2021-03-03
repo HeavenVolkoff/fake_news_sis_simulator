@@ -258,11 +258,4 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
                     )
 
 
-__all__ = (
-    "Event",
-    "TopologyType",
-    "EventType",
-    "Simulator",
-    "EventOrigin",
-    "TimelineType",
-)
+__all__ = ("Event", "TopologyType", "EventType", "Simulator", "EventOrigin", "TimelineType")
