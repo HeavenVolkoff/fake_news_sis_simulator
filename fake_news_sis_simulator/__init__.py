@@ -2,8 +2,9 @@
 from importlib_metadata import version
 
 # Project
+from .edo import edo_sis_k1, edo_sis_k2
+from .markov import q_matrix_k1, evolution_from_markov, markov_timeline_probability_matrix
 from .simulator import Event, EventType, Simulator, EventOrigin, TimelineType, TopologyType
-from .markov import q_matrix_k1, markov_timeline_probability_matrix, evolution_from_markov
 
 try:
     __version__: str = version(__name__)  # type: ignore

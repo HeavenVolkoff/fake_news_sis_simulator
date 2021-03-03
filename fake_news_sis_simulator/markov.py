@@ -17,8 +17,8 @@ def q_matrix_k1(
     Generates Q matrix for the k1 problem for any rates and user count
     """
 
-    # Initialize a Q matrix with size user_count + 1, each state represents the number of users with bad_news on
-    # their feed
+    # Initialize a matrix O with size user_count + 1
+    # Each state represents the number of users with fake_news on their feed
     q_matrix = np.zeros([user_count + 1, user_count + 1])
 
     # Loop to fill the matrix
@@ -72,7 +72,7 @@ def markov_timeline_probability_matrix(
     # Calculate the time increment for each step
     time_inc = simulation_time / simulation_steps
 
-    # Initialize the first time step to be one timestep in the future
+    # Initialize the first time step to be one time step in the future
     elapsed_time = time_inc
 
     # Loop to generate a probability timeline step for each possible state
@@ -94,10 +94,11 @@ def markov_timeline_probability_matrix(
 
 
 def evolution_from_markov(transient: np.ndarray) -> np.ndarray:
-    """
-    Generate evolution to be plotted so we can compare the Infected count and Susceptible count to other methods
-    """
+    """Generate evolution.
 
+    Plot and compare with the infected and susceptible count of other methods.
+
+    """
     # Initialize the evolution result matrix
     evolution = np.zeros(transient.shape)
 
@@ -105,10 +106,9 @@ def evolution_from_markov(transient: np.ndarray) -> np.ndarray:
     for j in range(1, transient.shape[1]):
         evolution[:, j] = j * transient[:, j]
 
-    # Join the user amount for each of the infected stages, so we have an amount of infected for each timestep
-    evolution = np.sum(evolution, axis=1)
-
-    return evolution
+    # Join the user amount for each of the infected stages,
+    # to have an amount of infected for each time step
+    return np.sum(evolution, axis=1)
 
 
 __all__ = (

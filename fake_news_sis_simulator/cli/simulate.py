@@ -60,28 +60,34 @@ class ReversedTable(Table):
 
 
 @click.command()
-@click.argument("timeline_spec", type=int, nargs=-1)
 @click.option("--iterations", "-i", type=int, default=0)
 @click.option("--seed", type=str, default=None)
 @click.option("--fifo", "timeline_type", flag_value=TimelineType.FIFO, default=True)
 @click.option("--random", "timeline_type", flag_value=TimelineType.RND)
 @click.option("--clique", "topology_type", flag_value=TopologyType.Clique, default=True)
 @click.option("--star", "topology_type", flag_value=TopologyType.Star)
-@click.option("--fake-rate", "-f", type=(float, float), required=True)
-@click.option("--genuine-rate", "-g", type=(float, float), required=True)
+@click.option("--fake-rate", "-f", type=str, required=True)
+@click.option("--genuine-rate", "-g", type=str, required=True)
+@click.argument("timeline_spec", type=str)
 def main(
-    timeline_spec: T.List[int],
+    timeline_spec: str,
     *,
     seed: str,
-    fake_rate: T.Tuple[float, float],
+    fake_rate: str,
     iterations: int,
-    genuine_rate: T.Tuple[float, float],
+    genuine_rate: str,
     timeline_type: TimelineType,
     topology_type: TopologyType,
 ) -> None:
+    timeline_spec = tuple(map(int, timeline_spec.split(",")))
     timeline_size = len(timeline_spec) - 1
     if timeline_size < 1:
         raise ValueError("Timeline have at least 2 values")
+
+    fake_rate = tuple(map(float, fake_rate.split(",")))
+    genuine_rate = tuple(map(float, genuine_rate.split(",")))
+    if len(fake_rate) != 2 or len(genuine_rate) != 2:
+        raise ValueError("fake_rate and genuine_rate must have two entries")
 
     timeline = []
     template = [deepcopy(EventType.Fake) for _ in range(timeline_size)]
@@ -187,3 +193,5 @@ def main(
 
 if __name__ == "__main__":
     main()
+
+__all__ = ("main",)
