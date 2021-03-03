@@ -9,7 +9,11 @@ from functools import reduce
 from collections import Counter
 
 # External
-from numpy.random import default_rng
+from numpy.random import Generator, default_rng
+
+if T.TYPE_CHECKING:
+    # External
+    from rich.pretty import Pretty
 
 
 @unique
@@ -50,7 +54,7 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self,
         users: T.Sequence[T.MutableSequence[EventType]],
         *,
-        rng_state: T.Optional[T.Dict[str, T.Any]] = None,
+        rng: T.Optional[Generator] = None,
         timeline_type: TimelineType = TimelineType.FIFO,
         topology_type: TopologyType = TopologyType.Clique,
         fake_rate_heuristic: T.Callable[[int], T.Union[int, float]],
@@ -60,7 +64,7 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         internal_genuine_transmission_rate: float,
         external_genuine_transmission_rate: float,
     ) -> None:
-        self.rng = default_rng(None)
+        self.rng = default_rng(None) if rng is None else rng
         self.clock: float = 0
         self.topology = topology_type
         self.timeline_type = timeline_type
@@ -72,12 +76,31 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
         self.internal_genuine_transmission_rate = internal_genuine_transmission_rate
         self.external_genuine_transmission_rate = external_genuine_transmission_rate
 
-        # Restore rng to a given state
-        if rng_state:
-            self.rng.set_state(rng_state)
-
     def __iter__(self) -> T.Iterator[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ...]]]]:
         return iter(self.step())
+
+    def __rich__(self) -> "Pretty":
+        # External
+        from rich.pretty import Pretty
+
+        return Pretty(
+            {
+                "clock": self.clock,
+                "users": len(self.users_timeline),
+                "timeline": self.timeline_type.name,
+                "topology": self.topology.name,
+                "rate": {
+                    "internal": {
+                        "fake": self.internal_fake_transmission_rate,
+                        "genuine": self.internal_genuine_transmission_rate,
+                    },
+                    "external": {
+                        "fake": self.external_fake_transmission_rate,
+                        "genuine": self.external_genuine_transmission_rate,
+                    },
+                },
+            }
+        )
 
     def step(
         self,
@@ -105,22 +128,6 @@ class Simulator(T.Iterable[T.Tuple[float, Event, T.Counter[T.Tuple[EventType, ..
                 stats[tuple(timeline)] += 1
 
             yield self.clock, event, stats
-
-    def debug(self, iterations: int) -> T.Dict[str, T.Any]:
-        """Execute N iterations of the simulator and print debug information each step.
-
-        Arguments:
-            iterations: Number of iterations to run the simulator.
-
-        """
-        rng_state: T.Dict[str, T.Any] = self.rng.get_state(legacy=False)
-        for pos, (time, event, stats) in enumerate(self.step()):
-            if pos > iterations:
-                break
-
-            print(pos, event.type, event.origin, stats)
-
-        return rng_state
 
     def gen_events(self, event_queue: T.List[Event]) -> None:
         """Populate event queue with a round of generated events.
